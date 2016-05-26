@@ -31,6 +31,7 @@ enum StreamingVideoProvider {
   kStreamAnn,
   kStreamCrunchyroll,
   kStreamDaisuki,
+  kStreamEmby,
   kStreamPlex,
   kStreamVeoh,
   kStreamViz,
@@ -373,6 +374,8 @@ bool IsStreamSettingEnabled(StreamingVideoProvider stream_provider) {
       return Settings.GetBool(taiga::kStream_Crunchyroll);
     case kStreamDaisuki:
       return Settings.GetBool(taiga::kStream_Daisuki);
+    case kStreamEmby:
+      return Settings.GetBool(taiga::kStream_Emby);
     case kStreamPlex:
       return Settings.GetBool(taiga::kStream_Plex);
     case kStreamVeoh:
@@ -400,6 +403,8 @@ bool MatchStreamUrl(StreamingVideoProvider stream_provider,
              SearchRegex(url, L"crunchyroll\\.[a-z.]+/[^/]+/.*-movie-[0-9]+");
     case kStreamDaisuki:
       return InStr(url, L"daisuki.net/anime/watch/") > -1;
+    case kStreamEmby:
+      return false; // TODO: Add String Check Here for Emby, Get Emby Server Installed.
     case kStreamPlex:
       return SearchRegex(url,
           L"(?:(?:localhost|\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}):32400|plex.tv)/web/");
@@ -445,6 +450,10 @@ void CleanStreamTitle(StreamingVideoProvider stream_provider,
         title.clear();
       }
       break;
+    }
+    // Emby
+    case kStreamEmby: {
+        //TODO: Add Code to Sanitize Title for Emby.
     }
     // Plex
     case kStreamPlex: {
