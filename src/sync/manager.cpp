@@ -20,6 +20,7 @@
 #include "base/string.h"
 #include "library/anime_db.h"
 #include "library/history.h"
+#include "sync/anilist.h"
 #include "sync/hummingbird.h"
 #include "sync/manager.h"
 #include "sync/myanimelist.h"
@@ -37,6 +38,7 @@ Manager::Manager() {
   // Create services
   services_[kMyAnimeList].reset(new myanimelist::Service());
   services_[kHummingbird].reset(new hummingbird::Service());
+  services_[kAniList].reset(new anilist::Service());
 }
 
 Manager::~Manager() {

@@ -61,6 +61,9 @@
     <Filter Include="win\ctrl">
       <UniqueIdentifier>{cda71bda-a7b7-46d6-9c94-a7fafbabba09}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sync\anilist">
+      <UniqueIdentifier>{39f2463c-a715-4ae4-bc44-929601a11de5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\main.cpp" />
@@ -517,6 +520,12 @@
     <ClCompile Include="..\..\src\win\ctrl\win_ctrl_treeview.cpp">
       <Filter>win\ctrl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\sync\anilist.cpp">
+      <Filter>sync\anilist</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sync\anilist_util.cpp">
+      <Filter>sync\anilist</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\base\base64.h">
@@ -938,6 +947,15 @@
     </ClInclude>
     <ClInclude Include="..\..\src\win\ctrl\win_ctrl.h">
       <Filter>win\ctrl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\sync\anilist.h">
+      <Filter>sync\anilist</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\sync\anilist_types.h">
+      <Filter>sync\anilist</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\sync\anilist_util.h">
+      <Filter>sync\anilist</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
