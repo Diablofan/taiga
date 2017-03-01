@@ -30,7 +30,8 @@ enum TimerIds {
   kTimerMedia,
   kTimerMemory,
   kTimerStats,
-  kTimerTorrents
+  kTimerTorrents,
+  kTimerAniListRefresh
 };
 
 class Timer : public base::Timer {

@@ -970,13 +970,12 @@ void OnTwitterTokenRequest(bool success) {
   }
 }
 
-bool OnTwitterTokenEntry(string_t& auth_pin) {
+bool OnTokenEntry(string_t& auth_pin, string_t service) {
   ClearStatusText();
 
   InputDialog dlg;
-  dlg.title = L"Twitter Authorization";
-  dlg.info = L"Please enter the PIN shown on the page after logging into "
-             L"Twitter:";
+  dlg.title = service + L" Authorization";
+  dlg.info = L"Please enter the PIN shown on the page after logging into " + service + ":";
   dlg.Show();
 
   if (dlg.result == IDOK && !dlg.text.empty()) {
@@ -985,6 +984,10 @@ bool OnTwitterTokenEntry(string_t& auth_pin) {
   }
 
   return false;
+}
+
+bool OnTwitterTokenEntry(string_t& auth_pin) {
+  return OnTokenEntry(auth_pin, L"Twitter");
 }
 
 void OnTwitterAuth(bool success) {

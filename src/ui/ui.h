@@ -101,6 +101,8 @@ void OnMircDdeInitFail(bool testing = false);
 void OnMircDdeConnectionFail(bool testing = false);
 void OnMircDdeConnectionSuccess(const std::vector<std::wstring>& channels, bool testing = false);
 
+bool OnTokenEntry(string_t& auth_pin, string_t service);
+
 void OnTwitterTokenRequest(bool success);
 bool OnTwitterTokenEntry(string_t& auth_pin);
 void OnTwitterAuth(bool success);

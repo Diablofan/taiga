@@ -45,6 +45,7 @@ public:
 private:
   REQUEST_AND_RESPONSE(AddLibraryEntry);
   REQUEST_AND_RESPONSE(AuthenticateUser);
+  REQUEST_AND_RESPONSE(RefreshAuth);
   REQUEST_AND_RESPONSE(DeleteLibraryEntry);
   REQUEST_AND_RESPONSE(GetLibraryEntries);
   REQUEST_AND_RESPONSE(GetMetadataById);
@@ -60,7 +61,12 @@ private:
   void ParseLibraryObject(Json::Value& value);
   bool ParseResponseBody(Response& response, HttpResponse& http_response, Json::Value& root);
 
+  bool RequestAniListPin(string_t& auth_pin);
+
   string_t auth_token_;
+  string_t refresh_token_;
+  string_t client_id_;
+  string_t client_secret_;
 };
 
 }  // namespace anilist

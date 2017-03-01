@@ -16,6 +16,7 @@
 ** along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "base/file.h"
 #include "base/http.h"
 #include "base/json.h"
 #include "base/string.h"
@@ -25,16 +26,20 @@
 #include "sync/anilist_types.h"
 #include "sync/anilist_util.h"
 #include "taiga/settings.h"
+#include "ui/ui.h"
 
 namespace sync {
 namespace anilist {
 
 Service::Service() {
-  host_ = L"anilist.co/api/";
+  host_ = L"anilist.co";
+  // Todo: Fill these in
+  client_id_ = L"";
+  client_secret_ = L"";
 
-  id_ = kHummingbird;
-  canonical_name_ = L"hummingbird";
-  name_ = L"Hummingbird";
+  id_ = kAniList;
+  canonical_name_ = L"anilist";
+  name_ = L"AniList";
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -59,13 +64,8 @@ void Service::BuildRequest(Request& request, HttpRequest& http_request) {
     http_request.header[L"Authorization"] = L"Bearer " + auth_token_;
 
   switch (request.type) {
-    BUILD_HTTP_REQUEST(kAddLibraryEntry, AddLibraryEntry);
     BUILD_HTTP_REQUEST(kAuthenticateUser, AuthenticateUser);
-    BUILD_HTTP_REQUEST(kDeleteLibraryEntry, DeleteLibraryEntry);
-    BUILD_HTTP_REQUEST(kGetLibraryEntries, GetLibraryEntries);
-    BUILD_HTTP_REQUEST(kGetMetadataById, GetMetadataById);
-    BUILD_HTTP_REQUEST(kSearchTitle, SearchTitle);
-    BUILD_HTTP_REQUEST(kUpdateLibraryEntry, UpdateLibraryEntry);
+    BUILD_HTTP_REQUEST(kRefreshAuth, RefreshAuth);
   }
 
   // APIv1 provides different title and alternate_title values depending on the
@@ -77,13 +77,8 @@ void Service::BuildRequest(Request& request, HttpRequest& http_request) {
 void Service::HandleResponse(Response& response, HttpResponse& http_response) {
   if (RequestSucceeded(response, http_response)) {
     switch (response.type) {
-      HANDLE_HTTP_RESPONSE(kAddLibraryEntry, AddLibraryEntry);
       HANDLE_HTTP_RESPONSE(kAuthenticateUser, AuthenticateUser);
-      HANDLE_HTTP_RESPONSE(kDeleteLibraryEntry, DeleteLibraryEntry);
-      HANDLE_HTTP_RESPONSE(kGetLibraryEntries, GetLibraryEntries);
-      HANDLE_HTTP_RESPONSE(kGetMetadataById, GetMetadataById);
-      HANDLE_HTTP_RESPONSE(kSearchTitle, SearchTitle);
-      HANDLE_HTTP_RESPONSE(kUpdateLibraryEntry, UpdateLibraryEntry);
+      HANDLE_HTTP_RESPONSE(kRefreshAuth, RefreshAuth);
     }
   }
 }
@@ -91,137 +86,60 @@ void Service::HandleResponse(Response& response, HttpResponse& http_response) {
 ////////////////////////////////////////////////////////////////////////////////
 // Request builders
 
+bool Service::RequestAniListPin(string_t& auth_pin) {
+  string_t auth_url;
+  auth_url = L"https://anilist.co/api/auth/authorize";
+  auth_url += L"?response_type=pin&grant_type=authorization_pin";
+  auth_url += L"&client_id=" + client_id_;
+  ExecuteLink(auth_url);
+  return ui::OnTokenEntry(auth_pin, L"AniList");
+}
+
 void Service::AuthenticateUser(Request& request, HttpRequest& http_request) {
+  string_t auth_pin;
+  if (!RequestAniListPin(auth_pin)) {
+    return;
+  }
+
   http_request.method = L"POST";
   http_request.header[L"Content-Type"] = L"application/x-www-form-urlencoded";
-  http_request.url.path = L"/users/authenticate";
+  http_request.url.path = L"/api/auth/access_token";
 
-  http_request.data[L"username"] = request.data[canonical_name_ + L"-username"];
-  http_request.data[L"password"] = request.data[canonical_name_ + L"-password"];
+  http_request.data[L"grant_type"] = L"authorization_pin";
+  http_request.data[L"client_id"] = client_id_;
+  http_request.data[L"client_secret"] = client_secret_;
+  http_request.data[L"code"] = auth_pin;
 }
 
-void Service::GetLibraryEntries(Request& request, HttpRequest& http_request) {
-  http_request.url.path =
-      L"/users/" + request.data[canonical_name_ + L"-username"] + L"/library";
-
-  if (request.data.count(L"status"))
-    http_request.url.query[L"status"] =
-        TranslateMyStatusTo(ToInt(request.data[L"status"]));
-}
-
-void Service::GetMetadataById(Request& request, HttpRequest& http_request) {
-  http_request.url.path = L"/anime/" + request.data[canonical_name_ + L"-id"];
-}
-
-void Service::SearchTitle(Request& request, HttpRequest& http_request) {
-  // Note that this method will return only 7 results at a time.
-  http_request.url.path = L"/search/anime";
-  http_request.url.query[L"query"] = request.data[L"title"];
-}
-
-void Service::AddLibraryEntry(Request& request, HttpRequest& http_request) {
-  UpdateLibraryEntry(request, http_request);
-}
-
-void Service::DeleteLibraryEntry(Request& request, HttpRequest& http_request) {
-  http_request.method = L"POST";
-  http_request.url.path =
-      L"/libraries/" + request.data[canonical_name_ + L"-id"] + L"/remove";
-}
-
-void Service::UpdateLibraryEntry(Request& request, HttpRequest& http_request) {
+void Service::RefreshAuth(Request& request, HttpRequest& http_request) {
   http_request.method = L"POST";
   http_request.header[L"Content-Type"] = L"application/x-www-form-urlencoded";
-  http_request.url.path =
-      L"/libraries/" + request.data[canonical_name_ + L"-id"];
+  http_request.url.path = L"/api/auth/access_token";
 
-  if (request.data.count(L"status"))
-    http_request.data[L"status"] =
-        TranslateMyStatusTo(ToInt(request.data[L"status"]));
-  if (request.data.count(L"score"))
-    http_request.data[L"sane_rating_update"] =
-        TranslateMyRatingTo(ToInt(request.data[L"score"]));
-  if (request.data.count(L"enable_rewatching"))
-    http_request.data[L"rewatching"] =
-        request.data[L"enable_rewatching"] == L"0" ? L"false" : L"true";
-  if (request.data.count(L"rewatched_times"))
-    http_request.data[L"rewatched_times"] = request.data[L"rewatched_times"];
-  if (request.data.count(L"episode"))
-    http_request.data[L"episodes_watched"] = request.data[L"episode"];
+  http_request.data[L"grant_type"] = L"refresh_token";
+  http_request.data[L"client_id"] = client_id_;
+  http_request.data[L"client_secret"] = client_secret_;
+  http_request.data[L"refresh_token"] = refresh_token_;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Response handlers
 
 void Service::AuthenticateUser(Response& response, HttpResponse& http_response) {
-  auth_token_ = http_response.body;
-  Trim(auth_token_, L"\"'");
-}
-
-void Service::GetLibraryEntries(Response& response, HttpResponse& http_response) {
+  Json::Reader reader;
   Json::Value root;
-
-  if (!ParseResponseBody(response, http_response, root))
-    return;
-
-  AnimeDatabase.ClearUserData();
-
-  for (size_t i = 0; i < root.size(); i++)
-    ParseLibraryObject(root[i]);
+  reader.parse(WstrToStr(http_response.body), root);
+  auth_token_ = StrToWstr(root["access_token"].asString());
+  refresh_token_ = StrToWstr(root["refresh_token"].asString());
+  // Kick off one hour timer to refresh.
 }
 
-void Service::GetMetadataById(Response& response, HttpResponse& http_response) {
+void Service::RefreshAuth(Response& response, HttpResponse& http_response) {
+  Json::Reader reader;
   Json::Value root;
-
-  if (!ParseResponseBody(response, http_response, root))
-    return;
-
-  ::anime::Item anime_item;
-  anime_item.SetSource(this->id());
-  anime_item.SetId(ToWstr(root["id"].asInt()), this->id());
-  anime_item.SetLastModified(time(nullptr));  // current time
-
-  ParseAnimeObject(root, anime_item);
-
-  AnimeDatabase.UpdateItem(anime_item);
-}
-
-void Service::SearchTitle(Response& response, HttpResponse& http_response) {
-  Json::Value root;
-
-  if (!ParseResponseBody(response, http_response, root))
-    return;
-
-  for (size_t i = 0; i < root.size(); i++) {
-    ::anime::Item anime_item;
-    anime_item.SetSource(this->id());
-    anime_item.SetId(ToWstr(root[i]["id"].asInt()), this->id());
-    anime_item.SetLastModified(time(nullptr));  // current time
-
-    ParseAnimeObject(root[i], anime_item);
-
-    int anime_id = AnimeDatabase.UpdateItem(anime_item);
-
-    // We return a list of IDs so that we can display the results afterwards
-    AppendString(response.data[L"ids"], ToWstr(anime_id), L",");
-  }
-}
-
-void Service::AddLibraryEntry(Response& response, HttpResponse& http_response) {
-  // Returns "false"
-}
-
-void Service::DeleteLibraryEntry(Response& response, HttpResponse& http_response) {
-  // Returns "true"
-}
-
-void Service::UpdateLibraryEntry(Response& response, HttpResponse& http_response) {
-  Json::Value root;
-
-  if (!ParseResponseBody(response, http_response, root))
-    return;
-
-  ParseLibraryObject(root);
+  reader.parse(WstrToStr(http_response.body), root);
+  auth_token_ = StrToWstr(root["access_token"].asString());
+  // Kick off timer again.
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -46,7 +46,8 @@ enum RequestType {
   kAddLibraryEntry,
   kDeleteLibraryEntry,
   kGetLibraryEntries,
-  kUpdateLibraryEntry
+  kUpdateLibraryEntry,
+  kRefreshAuth
 };
 
 class Request {
